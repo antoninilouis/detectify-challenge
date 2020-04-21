@@ -1,0 +1,12 @@
+version: "3"
+services:
+    zookeeper:
+        image: detectify-challenge/ingestor:latest
+        command: ["/kafka/bin/zookeeper-server-start.sh", "/kafka/config/zookeeper.properties"]
+    broker-0:
+        image: detectify-challenge/ingestor:latest
+        command: ["/kafka/bin/kafka-server-start.sh", "/kafka/config/server.properties"]
+    # scraper:
+    #     image: detectify-challenge/scraper:latest
+    # detector:
+    #     image: detectify-challenge/detector:latest

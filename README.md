@@ -1,11 +1,13 @@
 # Detectify Challenge
 ## What is it?
 A scraper and analytics system to identify technologies used by a list of hosts.
+The following diagram describes the entire architecture of the solution:
+![Architecture](https://user-images.githubusercontent.com/4671707/79916579-4850c580-8429-11ea-8ff5-0b407db2b298.png)
 
 ## Usage
-
-## Solution
-![Architecture](https://user-images.githubusercontent.com/4671707/79916579-4850c580-8429-11ea-8ff5-0b407db2b298.png)
+From the project root, run:
+`$ make start`
+to start the system in the background.
 
 ## Stack
 - Kafka (Messaging/Streaming and Dataflow)
