@@ -2,11 +2,16 @@ version: "3"
 services:
     zookeeper:
         image: detectify-challenge/ingestor:latest
-        command: ["/kafka/bin/zookeeper-server-start.sh", "/kafka/config/zookeeper.properties"]
+        command: [ "/kafka/bin/zookeeper-server-start.sh", "/kafka/config/zookeeper.properties" ]
     broker-0:
         image: detectify-challenge/ingestor:latest
-        command: ["/kafka/bin/kafka-server-start.sh", "/kafka/config/server.properties"]
-    # scraper:
-    #     image: detectify-challenge/scraper:latest
+        environment:
+            - ZOOKEEPER_HOST=zookeeper
+        command: [ "/kafka/start-broker.sh" ]
+    scraper:
+        image: detectify-challenge/scraper:latest
+        environment:
+            - BROKER_HOST=broker-0
+            - BROKER_PORT=9092
     # detector:
     #     image: detectify-challenge/detector:latest
