@@ -20,7 +20,7 @@ public class Scraper {
         props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
 
-        Producer<String, String> producer = new KafkaProducer<>(props);
+        Producer<String, String> producer = new KafkaProducer<String, String>(props);
         ProducerRecord<String, String> producerRecord = new ProducerRecord<String,String>(SCRAPING_DATA_TOPIC, "key", "value");
         log.info("Sending scraping-data record.");
         producer.send(producerRecord);
