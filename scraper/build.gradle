@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'application'
     id 'distribution'
+    id "io.freefair.lombok" version "5.0.0-rc6"
 }
 
 repositories {
@@ -9,9 +10,11 @@ repositories {
 }
 
 dependencies {
+    compile group: 'org.apache.kafka', name: 'kafka-clients', version: '2.5.0'
+    compile group: 'org.slf4j', name: 'slf4j-log4j12', version: '1.7.5'
     testImplementation 'junit:junit:4.12'
 }
 
 application {
-    mainClassName = 'scraper.App'
+    mainClassName = 'scraper.Scraper'
 }
