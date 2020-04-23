@@ -9,5 +9,7 @@ build-detector:
 	gradle -b detector/build.gradle distTar
 	docker build -f docker/detector.Dockerfile -t detectify-challenge/detector .
 
+build-all: build-ingestor build-scraper build-detector
+
 start:
-	docker-compose -f docker/compose.yml up -d
+	docker-compose -f docker/compose.yml --env-file docker/.dev.env up -d

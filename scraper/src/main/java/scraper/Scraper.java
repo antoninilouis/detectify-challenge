@@ -21,7 +21,10 @@ public class Scraper {
         props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
 
         Producer<String, String> producer = new KafkaProducer<String, String>(props);
-        ProducerRecord<String, String> producerRecord = new ProducerRecord<String,String>(SCRAPING_DATA_TOPIC, "key", "value");
+        ProducerRecord<String, String> producerRecord = new ProducerRecord<String,String>(SCRAPING_DATA_TOPIC, 
+            "{\r\n  \"schema\": {\r\n    \"type\": \"struct\",\r\n    \"fields\": [\r\n      {\r\n        \"type\": \"int64\",\r\n        \"optional\": false,\r\n        \"field\": \"registertime\"\r\n      },\r\n      {\r\n        \"type\": \"string\",\r\n        \"optional\": false,\r\n        \"field\": \"userid\"\r\n      },\r\n      {\r\n        \"type\": \"string\",\r\n        \"optional\": false,\r\n        \"field\": \"regionid\"\r\n      },\r\n      {\r\n        \"type\": \"string\",\r\n        \"optional\": false,\r\n        \"field\": \"gender\"\r\n      }\r\n    ],\r\n    \"optional\": false,\r\n    \"name\": \"ksql.users\"\r\n  },\r\n  \"payload\": {\r\n    \"registertime\": 1493819497170,\r\n    \"userid\": \"User_1\",\r\n    \"regionid\": \"Region_5\",\r\n    \"gender\": \"MALE\"\r\n  }\r\n}",
+            "{\r\n  \"schema\": {\r\n    \"type\": \"struct\",\r\n    \"fields\": [\r\n      {\r\n        \"type\": \"int64\",\r\n        \"optional\": false,\r\n        \"field\": \"registertime\"\r\n      },\r\n      {\r\n        \"type\": \"string\",\r\n        \"optional\": false,\r\n        \"field\": \"userid\"\r\n      },\r\n      {\r\n        \"type\": \"string\",\r\n        \"optional\": false,\r\n        \"field\": \"regionid\"\r\n      },\r\n      {\r\n        \"type\": \"string\",\r\n        \"optional\": false,\r\n        \"field\": \"gender\"\r\n      }\r\n    ],\r\n    \"optional\": false,\r\n    \"name\": \"ksql.users\"\r\n  },\r\n  \"payload\": {\r\n    \"registertime\": 1493819497170,\r\n    \"userid\": \"User_1\",\r\n    \"regionid\": \"Region_5\",\r\n    \"gender\": \"MALE\"\r\n  }\r\n}"
+        );
         log.info("Sending scraping-data record.");
         producer.send(producerRecord);
         producer.close();

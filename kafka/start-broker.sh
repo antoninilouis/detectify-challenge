@@ -10,10 +10,10 @@ sed -i "/advertised.listeners=/c\advertised.listeners=PLAINTEXT://broker-0:9092"
 BROKER_PID=$!
 
 # create topics
-/kafka/bin/kafka-topics.sh --create --bootstrap-server localhost:9092 --topic scraping-data --partitions 1 \
+/kafka/bin/kafka-topics.sh --create --topic scraping-data --partitions 1 \
     --replication-factor 1 --if-not-exists
 
-/kafka/bin/kafka-topics.sh --create --bootstrap-server localhost:9092 --topic detection-data --partitions 1 \
+/kafka/bin/kafka-topics.sh --create --topic detection-data --partitions 1 \
     --replication-factor 1 --if-not-exists
 
 wait $BROKER_PID
