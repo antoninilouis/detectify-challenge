@@ -10,6 +10,17 @@ services:
         command: [ "/kafka/start-broker.sh" ]
         depends_on:
             - zookeeper
+    connect-worker:
+        image: detectify-challenge/ingestor:latest
+        environment:
+            - BROKER_HOST=broker-0
+            - BROKER_PORT=9092
+            - POSTGRES_USER=${DETECTIFY_CHALLENGE_POSTGRES_USER}
+            - POSTGRES_PASSWORD=${DETECTIFY_CHALLENGE_POSTGRES_PASSWORD}
+        command: [ "/kafka/start-standalone-worker.sh" ]
+        depends_on:
+            - postgres
+            - broker-0
     scraper:
         image: detectify-challenge/scraper:latest
         environment:
@@ -24,4 +35,11 @@ services:
             - BROKER_PORT=9092
         depends_on:
             - broker-0
-    
+    postgres:
+        image: postgres:12-alpine
+        environment:
+            - POSTGRES_USER=${DETECTIFY_CHALLENGE_POSTGRES_USER}
+            - POSTGRES_PASSWORD=${DETECTIFY_CHALLENGE_POSTGRES_PASSWORD}
+            - POSTGRES_DB=detectify-challenge
+        ports:
+            - "5432:5432"
