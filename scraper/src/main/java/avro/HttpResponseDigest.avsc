@@ -1,0 +1,57 @@
+{
+    "namespace": "types",
+    "type": "record",
+    "name": "HttpResponseDigest",
+    "fields": [{
+        "name": "headers",
+        "type": {
+            "type": "array",
+            "items": [{
+                "type": "record",
+                "name": "Header",
+                "fields": [{
+                    "name": "elements",
+                    "type": {
+                        "type": "array",
+                        "items": [{
+                            "type": "record",
+                            "name": "Element",
+                            "fields": [{
+                                    "type": "string",
+                                    "name": "name"
+                                },
+                                {
+                                    "type": "string",
+                                    "name": "value"
+                                },
+                                {
+                                    "name": "parameters",
+                                    "type": {
+                                        "type": "array",
+                                        "items": [{
+                                            "type": "record",
+                                            "name": "Parameter",
+                                            "fields": [{
+                                                    "name": "name",
+                                                    "type": "string"
+                                                },
+                                                {
+                                                    "name": "value",
+                                                    "type": "string"
+                                                }
+                                            ]
+                                        }]
+                                    }
+                                },
+                                {
+                                    "name": "parameter_count",
+                                    "type": "int"
+                                }
+                            ]
+                        }]
+                    }
+                }]
+            }]
+        }
+    }]
+}
