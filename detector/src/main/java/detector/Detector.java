@@ -1,7 +1,7 @@
 package detector;
 
 import lombok.extern.slf4j.Slf4j;
-import types.User;
+import types.HttpResponseDigest;
 
 import java.util.Properties;
 
@@ -24,15 +24,9 @@ public class Detector {
     private static String SCHEMA_REGISTRY_HOST = System.getenv("SCHEMA_REGISTRY_HOST");
 
     public static void main(String[] args) {
-        // When you want to override serdes explicitly/selectively
-        // final Map<String, String> serdeConfig = Collections.singletonMap("schema.registry.url",
-        //                                                                 "http://my-schema-registry:8081");
-        // final Serde<User> valueSpecificAvroSerde = new SpecificAvroSerde();
-        // valueSpecificAvroSerde.configure(serdeConfig, false); // `false` for record values
-
         StreamsBuilder builder = new StreamsBuilder();
-        KStream<String, User> stream = builder.stream(SCRAPING_DATA_TOPIC);
-        stream.peek((key, value) -> log.info(String.format("User: %s %s", value.getFirstName(), value.getLastName())))
+        KStream<String, HttpResponseDigest> stream = builder.stream(SCRAPING_DATA_TOPIC);
+        stream.peek((key, value) -> log.info(String.format("HttpResponseDigest for %s: %s", key, value.toString())))
             .to(DETECTION_DATA_TOPIC);
         Topology topology = builder.build();
 
