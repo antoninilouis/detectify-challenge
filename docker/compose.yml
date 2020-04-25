@@ -10,31 +10,56 @@ services:
         command: [ "/kafka/start-broker.sh" ]
         depends_on:
             - zookeeper
-    connect-worker:
-        image: detectify-challenge/ingestor:latest
+    schema-registry:
+        image: confluentinc/cp-schema-registry:latest
         environment:
-            - BROKER_HOST=broker-0
-            - BROKER_PORT=9092
-            - POSTGRES_USER=${DETECTIFY_CHALLENGE_POSTGRES_USER}
-            - POSTGRES_PASSWORD=${DETECTIFY_CHALLENGE_POSTGRES_PASSWORD}
-        command: [ "/kafka/start-standalone-worker.sh" ]
+            - SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS=broker-0:9092
+            - SCHEMA_REGISTRY_HOST_NAME=schema-registry
+            - SCHEMA_REGISTRY_LISTENERS=http://0.0.0.0:8081
         depends_on:
-            - postgres
+            - zookeeper        
+    connect-worker:
+        image: confluentinc/cp-kafka-connect:latest
+        environment:
+            - CONNECT_BOOTSTRAP_SERVERS=broker-0:9092
+            - CONNECT_GROUP_ID=detectify-connect-worker
+            - CONNECT_CONFIG_STORAGE_TOPIC=detectify-connect-config
+            - CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR=1
+            - CONNECT_OFFSET_STORAGE_TOPIC=detectify-connect-offsets
+            - CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR=1
+            - CONNECT_STATUS_STORAGE_TOPIC=detectify-connect-status
+            - CONNECT_STATUS_STORAGE_REPLICATION_FACTOR=1
+            - CONNECT_KEY_CONVERTER=org.apache.kafka.connect.storage.StringConverter
+            - CONNECT_VALUE_CONVERTER=io.confluent.connect.avro.AvroConverter
+            - CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL=http://schema-registry:8081
+            - CONNECT_INTERNAL_KEY_CONVERTER=org.apache.kafka.connect.json.JsonConverter
+            - CONNECT_INTERNAL_VALUE_CONVERTER=org.apache.kafka.connect.json.JsonConverter
+            - CONNECT_REST_ADVERTISED_HOST_NAME=connect-worker
+            - CONNECT_PLUGIN_PATH=/usr/share/java
+        depends_on:
             - broker-0
+            - schema-registry
+            - postgres
+        ports:
+            - "8083:8083"
     scraper:
         image: detectify-challenge/scraper:latest
         environment:
             - BROKER_HOST=broker-0
             - BROKER_PORT=9092
+            - SCHEMA_REGISTRY_HOST=schema-registry
         depends_on:
             - broker-0
+            - schema-registry
     detector:
         image: detectify-challenge/detector:latest
         environment:
             - BROKER_HOST=broker-0
             - BROKER_PORT=9092
+            - SCHEMA_REGISTRY_HOST=schema-registry
         depends_on:
             - broker-0
+            - schema-registry
     postgres:
         image: postgres:12-alpine
         environment:

@@ -11,5 +11,8 @@ build-detector:
 
 build-all: build-ingestor build-scraper build-detector
 
+stop-all:
+	docker rm -f `docker ps -aq`
+
 start:
 	docker-compose -f docker/compose.yml --env-file docker/.dev.env up -d

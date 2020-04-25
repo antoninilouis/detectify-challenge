@@ -5,25 +5,28 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import lombok.extern.slf4j.Slf4j;
+import types.User;
 
 @Slf4j
 public class Scraper {
 
     private static String SCRAPING_DATA_TOPIC = "scraping-data";
-    private static String brokerHost = System.getenv("BROKER_HOST");
-    private static String brokerPort = System.getenv("BROKER_PORT");
+    private static String BROKER_HOST = System.getenv("BROKER_HOST");
+    private static String BROKER_PORT = System.getenv("BROKER_PORT");
+    private static String SCHEMA_REGISTRY_HOST = System.getenv("SCHEMA_REGISTRY_HOST");
 
     public static void main(String[] args) {
         Properties props = new Properties();
 
-        props.put("bootstrap.servers", brokerHost + ':' + brokerPort);
+        props.put("bootstrap.servers", BROKER_HOST + ':' + BROKER_PORT);
         props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-        props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+        props.put("value.serializer", "io.confluent.kafka.serializers.KafkaAvroSerializer");
+        props.put("schema.registry.url", "http://" + SCHEMA_REGISTRY_HOST + ":8081");
 
-        Producer<String, String> producer = new KafkaProducer<String, String>(props);
-        ProducerRecord<String, String> producerRecord = new ProducerRecord<String,String>(SCRAPING_DATA_TOPIC, 
-            "{\r\n  \"schema\": {\r\n    \"type\": \"struct\",\r\n    \"fields\": [\r\n      {\r\n        \"type\": \"int64\",\r\n        \"optional\": false,\r\n        \"field\": \"registertime\"\r\n      },\r\n      {\r\n        \"type\": \"string\",\r\n        \"optional\": false,\r\n        \"field\": \"userid\"\r\n      },\r\n      {\r\n        \"type\": \"string\",\r\n        \"optional\": false,\r\n        \"field\": \"regionid\"\r\n      },\r\n      {\r\n        \"type\": \"string\",\r\n        \"optional\": false,\r\n        \"field\": \"gender\"\r\n      }\r\n    ],\r\n    \"optional\": false,\r\n    \"name\": \"ksql.users\"\r\n  },\r\n  \"payload\": {\r\n    \"registertime\": 1493819497170,\r\n    \"userid\": \"User_1\",\r\n    \"regionid\": \"Region_5\",\r\n    \"gender\": \"MALE\"\r\n  }\r\n}",
-            "{\r\n  \"schema\": {\r\n    \"type\": \"struct\",\r\n    \"fields\": [\r\n      {\r\n        \"type\": \"int64\",\r\n        \"optional\": false,\r\n        \"field\": \"registertime\"\r\n      },\r\n      {\r\n        \"type\": \"string\",\r\n        \"optional\": false,\r\n        \"field\": \"userid\"\r\n      },\r\n      {\r\n        \"type\": \"string\",\r\n        \"optional\": false,\r\n        \"field\": \"regionid\"\r\n      },\r\n      {\r\n        \"type\": \"string\",\r\n        \"optional\": false,\r\n        \"field\": \"gender\"\r\n      }\r\n    ],\r\n    \"optional\": false,\r\n    \"name\": \"ksql.users\"\r\n  },\r\n  \"payload\": {\r\n    \"registertime\": 1493819497170,\r\n    \"userid\": \"User_1\",\r\n    \"regionid\": \"Region_5\",\r\n    \"gender\": \"MALE\"\r\n  }\r\n}"
+        Producer<String, User> producer = new KafkaProducer<String, User>(props);
+        ProducerRecord<String, User> producerRecord = new ProducerRecord<String, User>(SCRAPING_DATA_TOPIC, 
+            "Record ID",
+            new User("John", "Doe", 33)
         );
         log.info("Sending scraping-data record.");
         producer.send(producerRecord);
