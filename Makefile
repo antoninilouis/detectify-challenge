@@ -16,7 +16,7 @@ stop-all:
 
 avro:
 	rm -rf scraper/src/main/java/types detector/src/main/java/types
-	java -jar avro-tools-1.9.2.jar compile schema scraper/src/main/java/avro/HttpResponseDigest.avsc scraper/src/main/java
+	java -jar avro-tools-1.9.2.jar compile schema scraper/src/main/resources/avro/HttpResponseDigest.avsc scraper/src/main/java
 	cp -r scraper/src/main/java/types detector/src/main/java
 
 start:

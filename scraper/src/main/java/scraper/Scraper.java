@@ -111,22 +111,25 @@ public class Scraper {
 
         // Set headers (array)
         .setHeaders(Arrays.asList(requestHeaders).stream().map(requestHeader ->
-            // Set Header (record)
-            types.Header.newBuilder()
 
+            // Build Header (record)
+            types.Header.newBuilder()
+            .setName(requestHeader.getName())
+            .setValue(requestHeader.getValue())
             // Set elements (array)
             .setElements(Arrays.asList(requestHeader.getElements()).stream().map(headerElement ->
-                // Set Element (record)
+
+                // Build Element (record)
                 types.Element.newBuilder()
                 // Set name (primitive)
                 .setName(headerElement.getName())
                 // Set value (primitive)
                 .setValue(headerElement.getValue())
                 .setParameterCount(headerElement.getParameterCount())
-
                 // Set parameters (array)
                 .setParameters(Arrays.asList(headerElement.getParameters()).stream().map(elementParam ->
-                    // Set parameter (record)
+
+                    // Build parameter (record)
                     types.Parameter.newBuilder()
                     // Set name (primitive)
                     .setName(elementParam.getName())
