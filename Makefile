@@ -11,5 +11,13 @@ build-detector:
 
 build-all: build-ingestor build-scraper build-detector
 
+stop-all:
+	docker rm -f `docker ps -aq`
+
+avro:
+	rm -rf scraper/src/main/java/types detector/src/main/java/types
+	java -jar avro-tools-1.9.2.jar compile schema scraper/src/main/resources/avro/HttpResponseDigest.avsc scraper/src/main/java
+	cp -r scraper/src/main/java/types detector/src/main/java
+
 start:
 	docker-compose -f docker/compose.yml --env-file docker/.dev.env up -d
