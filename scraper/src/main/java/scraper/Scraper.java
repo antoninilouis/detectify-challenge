@@ -122,6 +122,7 @@ public class Scraper {
                 .setName(headerElement.getName())
                 // Set value (primitive)
                 .setValue(headerElement.getValue())
+                .setParameterCount(headerElement.getParameterCount())
 
                 // Set parameters (array)
                 .setParameters(Arrays.asList(headerElement.getParameters()).stream().map(elementParam ->
@@ -131,8 +132,11 @@ public class Scraper {
                     .setName(elementParam.getName())
                     // Set value (primitive)
                     .setValue(elementParam.getValue())
+                    .build()
                 ).collect(Collectors.toList()))
+                .build()
             ).collect(Collectors.toList()))
+            .build()
         ).collect(Collectors.toList()))
         .build();
         return httpResponseDigest;

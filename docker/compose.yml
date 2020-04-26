@@ -68,3 +68,5 @@ services:
             - POSTGRES_DB=detectify-challenge
         ports:
             - "5432:5432"
+    nginx:
+        image: nginx:alpine

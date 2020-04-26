@@ -17,11 +17,11 @@
                             "type": "record",
                             "name": "Element",
                             "fields": [{
-                                    "type": "string",
+                                    "type": ["null", "string"],
                                     "name": "name"
                                 },
                                 {
-                                    "type": "string",
+                                    "type": ["null", "string"],
                                     "name": "value"
                                 },
                                 {
@@ -33,11 +33,11 @@
                                             "name": "Parameter",
                                             "fields": [{
                                                     "name": "name",
-                                                    "type": "string"
+                                                    "type": ["null", "string"]
                                                 },
                                                 {
                                                     "name": "value",
-                                                    "type": "string"
+                                                    "type": ["null", "string"]
                                                 }
                                             ]
                                         }]
@@ -45,7 +45,7 @@
                                 },
                                 {
                                     "name": "parameter_count",
-                                    "type": "int"
+                                    "type": ["null", "int"]
                                 }
                             ]
                         }]
