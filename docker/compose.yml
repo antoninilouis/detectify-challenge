@@ -1,4 +1,4 @@
-version: "3"
+version: "3.2"
 services:
     zookeeper:
         image: detectify-challenge/ingestor:latest
@@ -70,3 +70,11 @@ services:
             - "5432:5432"
     nginx:
         image: nginx:alpine
+    detection-service:
+        image: jazzdd/alpine-flask
+        volumes:
+            - type: bind
+              source: ../detection-service
+              target: /app
+        ports:
+            - "80"

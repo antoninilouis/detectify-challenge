@@ -19,7 +19,7 @@ clear-schemas:
 	docker exec `docker ps --filter "name=docker_schema-registry_1" -q` sh -c "curl -X DELETE http://schema-registry:8081/subjects/scraping-data-value"
 
 rm-apps: clear-schemas
-	docker rm -f `docker ps --filter "name=docker_scraper_1" --filter "name=docker_detector_1" -aq`
+	docker rm -f `docker ps --filter "name=docker_scraper_1" --filter "name=docker_detector_1" --filter "name=docker_detection-service_1" -aq`
 
 avro:
 	rm -rf scraper/src/main/java/types detector/src/main/java/types
