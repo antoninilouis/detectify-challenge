@@ -1,35 +1,83 @@
 package detector;
 
 import lombok.extern.slf4j.Slf4j;
+import types.Header;
 import types.HttpResponseDigest;
-
+import types.HttpServer;
+import types.ServerScan;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
-
+import java.util.stream.Collectors;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
+import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.KStream;
-
+import org.apache.kafka.streams.kstream.KeyValueMapper;
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
 
+/**
+ * A Kafka streaming application to identify the technology used by a server.
+ * The Detector uses scraping-data topic HttpResponseDigest serialized data as source
+ */
 @Slf4j
 public class Detector {
     private static String SCRAPING_DATA_TOPIC = "scraping-data";
-    private static String DETECTION_DATA_TOPIC = "detection-data";
+    private static String HTTP_SERVER_DATA = "http-server-data";
+    private static String SERVER_SCAN_DATA = "server-scan-data";
     private static String BROKER_HOST = System.getenv("BROKER_HOST");
     private static String BROKER_PORT = System.getenv("BROKER_PORT");
     private static String SCHEMA_REGISTRY_HOST = System.getenv("SCHEMA_REGISTRY_HOST");
 
+    // Technologies
+    private static final String TECHNOLOGY_NGINX = "Nginx";
+
     public static void main(String[] args) {
         StreamsBuilder builder = new StreamsBuilder();
-        KStream<String, HttpResponseDigest> stream = builder.stream(SCRAPING_DATA_TOPIC);
-        stream.peek((key, value) -> log.info(String.format("HttpResponseDigest for %s: %s", key, value.toString())))
-            .to(DETECTION_DATA_TOPIC);
-        Topology topology = builder.build();
 
+        // Build stream
+        KStream<String, HttpResponseDigest> stream = builder.stream(SCRAPING_DATA_TOPIC);
+        // Build http server topology
+        stream
+            .flatMap(new KeyValueMapper<String, HttpResponseDigest, Iterable<KeyValue<String, HttpServer>>> (){
+                @Override
+                public Iterable<KeyValue<String, HttpServer>> apply(String key, HttpResponseDigest value) {
+                    return Arrays.asList(KeyValue.pair(key,
+                        HttpServer.newBuilder()
+                        .setHostname(key)
+                        .setIp("IP")
+                        .build()
+                    ));
+                }
+            })
+            .to(HTTP_SERVER_DATA);
+
+        // Build server scan topology
+        stream
+            .flatMap(new KeyValueMapper<String, HttpResponseDigest, Iterable<KeyValue<String, ServerScan>>> (){
+                @Override
+                public Iterable<KeyValue<String, ServerScan>> apply(String hostname, HttpResponseDigest httpResponseDigest) {
+                    List<String> technologies = detectTechnologies(httpResponseDigest);
+                    return technologies.stream().map(technology -> {
+                        KeyValue<String, ServerScan> kv = KeyValue.pair(hostname,
+                            ServerScan.newBuilder()
+                            .setHttpServerHostname(hostname)
+                            .setTechnology(technology)
+                            .build()
+                        );
+                        log.info("KeyValue(): " + kv.toString());
+                        return kv;
+                    }).collect(Collectors.toList());
+                }
+            })
+            .to(SERVER_SCAN_DATA);
+
+        Topology topology = builder.build();
         Properties props = new Properties();
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, "detector");
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, BROKER_HOST + ":" + BROKER_PORT);
@@ -40,5 +88,24 @@ public class Detector {
         KafkaStreams streams = new KafkaStreams(topology, props);
         streams.start();
         Runtime.getRuntime().addShutdownHook(new Thread(streams::close));
+    }
+
+    private static List<String> detectTechnologies(HttpResponseDigest httpResponseDigest) {
+        List<String> technologies = new ArrayList<String>();
+        // Detect Nginx server
+        Header serverHeader = getHeaderByName(httpResponseDigest.getHeaders(), "Server");
+        if (serverHeader.getValue().toString().toLowerCase().contains("nginx"))
+            technologies.add(TECHNOLOGY_NGINX);
+        log.info("detectTechnologies: " + technologies.toString());
+        return technologies;
+    }
+
+    private static Header getHeaderByName(List<Object> headers, String name) {
+        List<Object> matchList = headers
+            .stream()
+            .filter(header -> ((Header)header).getName().toString().equals(name))
+            .collect(Collectors.toList());
+        log.info("getHeaderByName: " + matchList.toString());
+        return matchList.size() > 0 ? (Header)matchList.get(0) : null;
     }
 }

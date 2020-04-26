@@ -1,0 +1,14 @@
+{
+    "namespace": "types",
+    "type": "record",
+    "name": "ServerScan",
+    "fields": [{
+            "name": "http_server_hostname",
+            "type": "string"
+        },
+        {
+            "name": "technology",
+            "type": ["null", "string"]
+        }
+    ]
+}
