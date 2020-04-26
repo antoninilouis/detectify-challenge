@@ -1,0 +1,18 @@
+{
+    "namespace": "types",
+    "type": "record",
+    "name": "HttpServer",
+    "fields": [{
+            "name": "id",
+            "type": "long"
+        },
+        {
+            "name": "host",
+            "type": ["null", "string"]
+        },
+        {
+            "name": "ip",
+            "type": ["null", "string"]
+        }
+    ]
+}
