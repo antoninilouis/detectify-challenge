@@ -3,12 +3,8 @@
     "type": "record",
     "name": "ServerScan",
     "fields": [{
-            "name": "id",
-            "type": "long"
-        },
-        {
-            "name": "http_server_id",
-            "type": ["null", "long"]
+            "name": "http_server_hostname",
+            "type": "string"
         },
         {
             "name": "technology",

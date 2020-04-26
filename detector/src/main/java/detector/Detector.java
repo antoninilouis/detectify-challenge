@@ -10,10 +10,12 @@ import java.util.Properties;
 
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
+import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.streams.kstream.KeyValueMapper;
 import org.apache.kafka.streams.kstream.ValueMapper;
 
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
@@ -35,33 +37,34 @@ public class Detector {
     public static void main(String[] args) {
         StreamsBuilder builder = new StreamsBuilder();
 
-        // Build http server stream
+        // Build stream
         KStream<String, HttpResponseDigest> stream = builder.stream(SCRAPING_DATA_TOPIC);
+        // Build http server topology
         stream
-            .peek((key, value) -> log.info(String.format("HttpResponseDigest for %s: %s", key, value.toString())))
-            .flatMapValues(new ValueMapper<HttpResponseDigest, Iterable<HttpServer>> (){
+            .flatMap(new KeyValueMapper<String, HttpResponseDigest, Iterable<KeyValue<String, HttpServer>>> (){
                 @Override
-                public Iterable<HttpServer> apply(HttpResponseDigest value) {
-                    return Arrays.asList(HttpServer.newBuilder()
-                        .setId((long)42)
-                        .setHost("HOST")
+                public Iterable<KeyValue<String, HttpServer>> apply(String key, HttpResponseDigest value) {
+                    return Arrays.asList(KeyValue.pair(key,
+                        HttpServer.newBuilder()
+                        .setHostname(key)
                         .setIp("IP")
-                        .build());
+                        .build()
+                    ));
                 }
             })
             .to(HTTP_SERVER_DATA);
 
         // Build server scan topology
         stream
-            .peek((key, value) -> log.info(String.format("HttpResponseDigest for %s: %s", key, value.toString())))
-            .flatMapValues(new ValueMapper<HttpResponseDigest, Iterable<ServerScan>> (){
+            .flatMap(new KeyValueMapper<String, HttpResponseDigest, Iterable<KeyValue<String, ServerScan>>> (){
                 @Override
-                public Iterable<ServerScan> apply(HttpResponseDigest value) {
-                    return Arrays.asList(ServerScan.newBuilder()
-                        .setId((long)84)
-                        .setHttpServerId((long)84)
+                public Iterable<KeyValue<String, ServerScan>> apply(String key, HttpResponseDigest value) {
+                    return Arrays.asList(KeyValue.pair(key,
+                        ServerScan.newBuilder()
+                        .setHttpServerHostname(key)
                         .setTechnology("TECHNOLOGY")
-                        .build());
+                        .build()
+                    ));
                 }
             })
             .to(SERVER_SCAN_DATA);

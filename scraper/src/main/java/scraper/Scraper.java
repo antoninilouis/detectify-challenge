@@ -36,16 +36,17 @@ public class Scraper {
         props.put("value.serializer", "io.confluent.kafka.serializers.KafkaAvroSerializer");
         props.put("schema.registry.url", "http://" + SCHEMA_REGISTRY_HOST + ":8081");
 
+        String hostname = "nginx";
         HttpResponseDigest httpResponseDigest = null;
         try {
-            httpResponseDigest = scraper.sendRequest("http://nginx");
+            httpResponseDigest = scraper.sendRequest("http://" + hostname);
         } catch (IllegalArgumentException illegalArgumentException) {
             log.error("An exception occured while setting HttpGet request URI: ", illegalArgumentException);
         }
 
         Producer<String, HttpResponseDigest> producer = new KafkaProducer<String, HttpResponseDigest>(props);
         ProducerRecord<String, HttpResponseDigest> producerRecord = new ProducerRecord<String, HttpResponseDigest>(SCRAPING_DATA_TOPIC,
-            "nginx",
+            hostname,
             httpResponseDigest
         );
         log.info("Sending scraping-data record.");

@@ -3,12 +3,8 @@
     "type": "record",
     "name": "HttpServer",
     "fields": [{
-            "name": "id",
-            "type": "long"
-        },
-        {
-            "name": "host",
-            "type": ["null", "string"]
+            "name": "hostname",
+            "type": "string"
         },
         {
             "name": "ip",
