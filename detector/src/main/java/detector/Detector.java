@@ -1,13 +1,15 @@
 package detector;
 
 import lombok.extern.slf4j.Slf4j;
+import types.Header;
 import types.HttpResponseDigest;
 import types.HttpServer;
 import types.ServerScan;
-
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
-
+import java.util.stream.Collectors;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyValue;
@@ -16,8 +18,6 @@ import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KeyValueMapper;
-import org.apache.kafka.streams.kstream.ValueMapper;
-
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
 
@@ -33,6 +33,9 @@ public class Detector {
     private static String BROKER_HOST = System.getenv("BROKER_HOST");
     private static String BROKER_PORT = System.getenv("BROKER_PORT");
     private static String SCHEMA_REGISTRY_HOST = System.getenv("SCHEMA_REGISTRY_HOST");
+
+    // Technologies
+    private static final String TECHNOLOGY_NGINX = "Nginx";
 
     public static void main(String[] args) {
         StreamsBuilder builder = new StreamsBuilder();
@@ -58,13 +61,18 @@ public class Detector {
         stream
             .flatMap(new KeyValueMapper<String, HttpResponseDigest, Iterable<KeyValue<String, ServerScan>>> (){
                 @Override
-                public Iterable<KeyValue<String, ServerScan>> apply(String key, HttpResponseDigest value) {
-                    return Arrays.asList(KeyValue.pair(key,
-                        ServerScan.newBuilder()
-                        .setHttpServerHostname(key)
-                        .setTechnology("TECHNOLOGY")
-                        .build()
-                    ));
+                public Iterable<KeyValue<String, ServerScan>> apply(String hostname, HttpResponseDigest httpResponseDigest) {
+                    List<String> technologies = detectTechnologies(httpResponseDigest);
+                    return technologies.stream().map(technology -> {
+                        KeyValue<String, ServerScan> kv = KeyValue.pair(hostname,
+                            ServerScan.newBuilder()
+                            .setHttpServerHostname(hostname)
+                            .setTechnology(technology)
+                            .build()
+                        );
+                        log.info("KeyValue(): " + kv.toString());
+                        return kv;
+                    }).collect(Collectors.toList());
                 }
             })
             .to(SERVER_SCAN_DATA);
@@ -80,5 +88,24 @@ public class Detector {
         KafkaStreams streams = new KafkaStreams(topology, props);
         streams.start();
         Runtime.getRuntime().addShutdownHook(new Thread(streams::close));
+    }
+
+    private static List<String> detectTechnologies(HttpResponseDigest httpResponseDigest) {
+        List<String> technologies = new ArrayList<String>();
+        // Detect Nginx server
+        Header serverHeader = getHeaderByName(httpResponseDigest.getHeaders(), "Server");
+        if (serverHeader.getValue().toString().toLowerCase().contains("nginx"))
+            technologies.add(TECHNOLOGY_NGINX);
+        log.info("detectTechnologies: " + technologies.toString());
+        return technologies;
+    }
+
+    private static Header getHeaderByName(List<Object> headers, String name) {
+        List<Object> matchList = headers
+            .stream()
+            .filter(header -> ((Header)header).getName().toString().equals(name))
+            .collect(Collectors.toList());
+        log.info("getHeaderByName: " + matchList.toString());
+        return matchList.size() > 0 ? (Header)matchList.get(0) : null;
     }
 }
