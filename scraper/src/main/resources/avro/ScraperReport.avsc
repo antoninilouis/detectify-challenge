@@ -3,85 +3,98 @@
     "name": "ScraperReport",
     "type": "record",
     "fields": [{
-            "name": "hostname",
-            "type": "string"
-        },
-        {
-            "name": "host_ip",
-            "type": "string"
-        },
-        {
             "name": "requester_correlation_id",
             "type": "string"
         },
         {
-            "name": "http_response_digest",
+            "name": "articles",
             "type": {
-                "type": "record",
-                "name": "HttpResponseDigest",
-                "fields": [{
-                    "name": "headers",
-                    "type": {
-                        "type": "array",
-                        "items": [{
-                            "type": "record",
-                            "name": "Header",
-                            "fields": [{
-                                    "name": "name",
-                                    "type": ["null", "string"]
-                                },
-                                {
-                                    "name": "value",
-                                    "type": ["null", "string"]
-                                },
-                                {
-                                    "name": "elements",
+                "type": "array",
+                "items": [{
+                    "type": "record",
+                    "name": "Article",
+                    "fields": [{
+                            "name": "hostname",
+                            "type": "string"
+                        },
+                        {
+                            "name": "host_ip",
+                            "type": "string"
+                        },
+                        {
+                            "name": "http_response_digest",
+                            "type": {
+                                "type": "record",
+                                "name": "HttpResponseDigest",
+                                "fields": [{
+                                    "name": "headers",
                                     "type": {
                                         "type": "array",
                                         "items": [{
                                             "type": "record",
-                                            "name": "Element",
+                                            "name": "Header",
                                             "fields": [{
-                                                    "type": ["null", "string"],
-                                                    "name": "name"
+                                                    "name": "name",
+                                                    "type": ["null", "string"]
                                                 },
                                                 {
-                                                    "type": ["null", "string"],
-                                                    "name": "value"
+                                                    "name": "value",
+                                                    "type": ["null", "string"]
                                                 },
                                                 {
-                                                    "name": "parameters",
+                                                    "name": "elements",
                                                     "type": {
                                                         "type": "array",
                                                         "items": [{
                                                             "type": "record",
-                                                            "name": "Parameter",
+                                                            "name": "Element",
                                                             "fields": [{
-                                                                    "name": "name",
-                                                                    "type": ["null", "string"]
+                                                                    "type": ["null", "string"],
+                                                                    "name": "name"
                                                                 },
                                                                 {
-                                                                    "name": "value",
-                                                                    "type": ["null", "string"]
+                                                                    "type": ["null", "string"],
+                                                                    "name": "value"
+                                                                },
+                                                                {
+                                                                    "name": "parameters",
+                                                                    "type": {
+                                                                        "type": "array",
+                                                                        "items": [{
+                                                                            "type": "record",
+                                                                            "name": "Parameter",
+                                                                            "fields": [{
+                                                                                    "name": "name",
+                                                                                    "type": ["null", "string"]
+                                                                                },
+                                                                                {
+                                                                                    "name": "value",
+                                                                                    "type": ["null", "string"]
+                                                                                }
+                                                                            ]
+                                                                        }]
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "name": "parameter_count",
+                                                                    "type": ["null", "int"]
                                                                 }
                                                             ]
                                                         }]
                                                     }
-                                                },
-                                                {
-                                                    "name": "parameter_count",
-                                                    "type": ["null", "int"]
                                                 }
                                             ]
                                         }]
                                     }
-                                }
-                            ]
-                        }]
-                    }
+                                }]
+                            }
+
+                        }
+                    ]
                 }]
             }
-
         }
+
+
     ]
 }

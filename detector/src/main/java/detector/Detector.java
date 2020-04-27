@@ -1,13 +1,13 @@
 package detector;
 
 import lombok.extern.slf4j.Slf4j;
+import types.Article;
 import types.Header;
 import types.HttpResponseDigest;
 import types.HttpServer;
 import types.ScraperReport;
 import types.ServerScan;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
@@ -24,9 +24,6 @@ import org.apache.kafka.streams.kstream.KeyValueMapper;
 import org.apache.kafka.streams.kstream.Produced;
 
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
-import io.confluent.kafka.serializers.KafkaAvroDeserializer;
-import io.confluent.kafka.serializers.KafkaJsonDeserializer;
-import io.confluent.kafka.serializers.KafkaJsonSerializer;
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
 
 /**
@@ -56,32 +53,49 @@ public class Detector {
             .flatMap(new KeyValueMapper<String, ScraperReport, Iterable<KeyValue<String, HttpServer>>> (){
                 @Override
                 public Iterable<KeyValue<String, HttpServer>> apply(String key, ScraperReport scraperReport) {
-                    return Arrays.asList(KeyValue.pair(key,
-                        HttpServer.newBuilder()
-                        .setHostname(scraperReport.getHostname())
-                        .setIp(scraperReport.getHostIp())
-                        .build()
-                    ));
+                    return scraperReport.getArticles().stream().map(article -> {
+                        KeyValue<String, HttpServer> kv = KeyValue.pair(key, 
+                            HttpServer.newBuilder()
+                            .setHostname(((Article)article).getHostname().toString())
+                            .setIp(((Article)article).getHostIp().toString())
+                            .build()
+                        );
+                        return kv;
+                    }).collect(Collectors.toCollection(ArrayList<KeyValue<String, HttpServer>>::new));
                 }
             })
             .to(HTTP_SERVER_DATA_TOPIC);
-
         // Build server scan topology
+
+        // KeyValue<String, ServerScan> kv = KeyValue.pair(hostname,
+        //     ServerScan.newBuilder()
+        //     .setHttpServerHostname(hostname)
+        //     .setTechnology(technology)
+        //     .build()
+        // );
+
         stream
             .flatMap(new KeyValueMapper<String, ScraperReport, Iterable<KeyValue<String, ServerScan>>> (){
                 @Override
                 public Iterable<KeyValue<String, ServerScan>> apply(String hostname, ScraperReport scraperReport) {
-                    List<String> technologies = detectTechnologies(scraperReport.getHttpResponseDigest());
-                    return technologies.stream().map(technology -> {
-                        KeyValue<String, ServerScan> kv = KeyValue.pair(hostname,
-                            ServerScan.newBuilder()
-                            .setHttpServerHostname(hostname)
-                            .setTechnology(technology)
-                            .build()
-                        );
-                        log.info("KeyValue(): " + kv.toString());
-                        return kv;
-                    }).collect(Collectors.toList());
+                    // Build an iterable of <HttpServerHostname, Technology>
+                    return scraperReport.getArticles().stream().map(article -> {
+                        List<String> technologies = detectTechnologies(((Article)article).getHttpResponseDigest());
+                        List<KeyValue<String, ServerScan>> scan = technologies.stream().map(technology -> {
+                            KeyValue<String, ServerScan> kv = KeyValue.pair(((Article)article).getHostname().toString(), 
+                                ServerScan.newBuilder()
+                                .setHttpServerHostname(((Article)article).getHostname().toString())
+                                .setTechnology(technology)
+                                .build()
+                            );
+                            return kv;
+                        }).collect(Collectors.toList());
+                        return scan;
+                    })
+                    .reduce(new ArrayList<KeyValue<String, ServerScan>>(), (part, next) -> {
+                        part.addAll(next);
+                        return part;
+                    });
                 }
             })
             .to(SERVER_SCAN_DATA_TOPIC);
@@ -90,16 +104,42 @@ public class Detector {
         // Produce a record to detection-responses topic with requester correlation id as key and matchList as value
         // Build stream
         stream
-            .flatMap(new KeyValueMapper<String, ScraperReport, Iterable<KeyValue<String, Object>>> (){
+            .flatMap(new KeyValueMapper<String, ScraperReport, Iterable<KeyValue<String, String>>> (){
                 @Override
-                public Iterable<KeyValue<String, Object>> apply(String key, ScraperReport scraperReport) {
-                    List<String> technologies = detectTechnologies(scraperReport.getHttpResponseDigest());
+                public Iterable<KeyValue<String, String>> apply(String key, ScraperReport scraperReport) {
+                    // Build an iterable of <HttpServerHostname, Technology>
+                    List<KeyValue<String, ServerScan>> scans = scraperReport.getArticles().stream().map(article -> {
+                        List<String> technologies = detectTechnologies(((Article)article).getHttpResponseDigest());
+                        List<KeyValue<String, ServerScan>> scan = technologies.stream().map(technology -> {
+                            KeyValue<String, ServerScan> kv = KeyValue.pair(((Article)article).getHostname().toString(), 
+                                ServerScan.newBuilder()
+                                .setHttpServerHostname(((Article)article).getHostname().toString())
+                                .setTechnology(technology)
+                                .build()
+                            );
+                            return kv;
+                        }).collect(Collectors.toList());
+                        return scan;
+                    })
+                    .reduce(new ArrayList<KeyValue<String, ServerScan>>(), (part, next) -> {
+                        part.addAll(next);
+                        return part;
+                    });
+
+                    // Filter matching technology and build match list
+                    List<KeyValue<String, ServerScan>> filteredScans = scans.stream()
+                    .filter(scan -> scan.value.getTechnology().toString() == TECHNOLOGY_NGINX)
+                    .collect(Collectors.toList());
+
+                    log.info("Filtered scans: " + filteredScans.toString());
+
                     JsonArray matchList = new JsonArray();
-                    technologies.forEach(technology -> matchList.add(technology));
+                    filteredScans.forEach(filteredScan -> matchList.add(filteredScan.value.getHttpServerHostname().toString()));
+
                     return Collections.singletonList(KeyValue.pair(scraperReport.getRequesterCorrelationId().toString(), matchList.toString()));
                 }
             })
-            .to(DETECTION_RESPONSES_TOPIC, Produced.with(Serdes.String(), Serdes.serdeFrom(new KafkaJsonSerializer<Object>(), new KafkaJsonDeserializer<Object>())));
+            .to(DETECTION_RESPONSES_TOPIC, Produced.with(Serdes.String(), new ResponseJsonSerde()));
 
         Topology topology = builder.build();
         Properties props = new Properties();

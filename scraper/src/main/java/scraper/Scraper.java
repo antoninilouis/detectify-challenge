@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
@@ -17,6 +18,7 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import lombok.extern.slf4j.Slf4j;
+import types.Article;
 import types.HttpResponseDigest;
 import types.ScraperReport;
 
@@ -70,10 +72,20 @@ public class Scraper {
                 for (ConsumerRecord<String, String> consumerRecord : consumerRecords) {
                     Gson gson = new Gson();
                     String[] hostnames = gson.fromJson(consumerRecord.value(), String[].class);
+                    List<Object> articles = Arrays.asList(hostnames).stream()
+                        .map(hostname -> scanHost(hostname))
+                        .collect(Collectors.toList());
 
-                    for (String hostname : Arrays.asList(hostnames)) {
-                        scanHost(consumerRecord.key(), hostname);
-                    }
+                    ScraperReport scraperReport = ScraperReport.newBuilder()
+                        .setArticles(articles)
+                        .setRequesterCorrelationId(consumerRecord.key())
+                        .build();
+                    ProducerRecord<String, ScraperReport> producerRecord = new ProducerRecord<String, ScraperReport>(SCRAPING_DATA_TOPIC,
+                        "ScraperReport",
+                        scraperReport
+                    );
+                    log.info("Sending scraping-data record.");
+                    producer.send(producerRecord);
                 }
             }
         } finally {
@@ -180,7 +192,7 @@ public class Scraper {
         return records;
     }
 
-    private void scanHost(String correlationId, String hostname){
+    private Article scanHost(String hostname){
         // Wrap HttpResponseDigest in ScraperReport
         // - includes hostname
         // - includes ip
@@ -193,18 +205,12 @@ public class Scraper {
             log.error("An exception occured while setting HttpGet request URI: ", illegalArgumentException);
         }
 
-        ScraperReport scraperReport = ScraperReport.newBuilder()
+        Article scraperArticle = Article.newBuilder()
         .setHostIp("IP")
         .setHostname(hostname)
         .setHttpResponseDigest(httpResponseDigest)
-        .setRequesterCorrelationId(correlationId)
         .build();
 
-        ProducerRecord<String, ScraperReport> producerRecord = new ProducerRecord<String, ScraperReport>(SCRAPING_DATA_TOPIC,
-            hostname,
-            scraperReport
-        );
-        log.info("Sending scraping-data record.");
-        producer.send(producerRecord);
+        return scraperArticle;
     }
 }
