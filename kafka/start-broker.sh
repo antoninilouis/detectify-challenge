@@ -16,4 +16,10 @@ BROKER_PID=$!
 /kafka/bin/kafka-topics.sh --create --topic detection-data --partitions 1 \
     --replication-factor 1 --if-not-exists
 
+/kafka/bin/kafka-topics.sh --create --topic detection-queries --partitions 1 \
+    --replication-factor 1 --if-not-exists
+
+/kafka/bin/kafka-topics.sh --create --topic detection-responses --partitions 1 \
+    --replication-factor 1 --if-not-exists
+
 wait $BROKER_PID

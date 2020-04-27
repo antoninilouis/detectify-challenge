@@ -77,4 +77,6 @@ services:
               source: ../detection-service
               target: /app
         ports:
-            - "80"
+            - "80:80"
+        depends_on:
+            - broker-0

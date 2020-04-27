@@ -1,2 +1,3 @@
 certifi==2019.11.28
+kafka-python==2.0.1
 wincertstore==0.2
