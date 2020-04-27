@@ -1,0 +1,24 @@
+Example endpoint returning a list of colors by palette
+In this example the specification is taken from external YAML file
+---
+summary: Returns the list of hosts that run Nginx
+consumes:
+  - application/json
+produces:
+  - application/json
+parameters:
+  - name: hosts
+    in: body
+    description: The list of hosts to scan
+    required: true
+    schema:
+      type: array
+      items:
+        type: string
+responses:
+  200:
+    description: The list of hosts that run Nginx.
+    schema:
+      type: array
+      items:
+        type: string
