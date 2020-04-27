@@ -22,7 +22,6 @@ import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KeyValueMapper;
 import org.apache.kafka.streams.kstream.Produced;
-
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
 
@@ -66,14 +65,6 @@ public class Detector {
             })
             .to(HTTP_SERVER_DATA_TOPIC);
         // Build server scan topology
-
-        // KeyValue<String, ServerScan> kv = KeyValue.pair(hostname,
-        //     ServerScan.newBuilder()
-        //     .setHttpServerHostname(hostname)
-        //     .setTechnology(technology)
-        //     .build()
-        // );
-
         stream
             .flatMap(new KeyValueMapper<String, ScraperReport, Iterable<KeyValue<String, ServerScan>>> (){
                 @Override

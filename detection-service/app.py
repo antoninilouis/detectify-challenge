@@ -37,8 +37,9 @@ def scan():
         for msg in consumer:
             if msg.key == correlationId:
                 consumer.close()
+                print(msg.value)
                 return jsonify(msg.value)
-    finally:
+    except StopIteration:
         return jsonify([])
 
 @app.route('/scan/<domain>')

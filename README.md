@@ -6,13 +6,13 @@ The following diagram describes the solution architecture:
 \* The diagram omits messaging conversation between the detection API for simplicity
 
 ## Usage
-From the project root, run:
+```shell
+# From the project root, run:
+$ make build-all
 
-`$ make build-all`
-
-to build the Docker images from sources. Then,
-
-`$ make start`
+# to build the Docker images from sources. Then,
+$ make start
+```
 
 to start the system in the background. After the start, the host port "80" is mapped to the service port and requests can be sent.
 The OpenAPI standard documentation is available in a Swagger interface served at **/apidocs**
