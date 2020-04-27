@@ -1,14 +1,25 @@
 package scraper;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Properties;
 import java.util.stream.Collectors;
+
+import com.google.gson.Gson;
+
+import org.apache.kafka.clients.consumer.Consumer;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import lombok.extern.slf4j.Slf4j;
 import types.HttpResponseDigest;
+import types.ScraperReport;
+
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -21,37 +32,59 @@ import org.apache.http.impl.client.HttpClients;
 @Slf4j
 public class Scraper {
 
+    private static String DETECTION_QUERIES_TOPIC = "detection-queries";
     private static String SCRAPING_DATA_TOPIC = "scraping-data";
     private static String BROKER_HOST = System.getenv("BROKER_HOST");
     private static String BROKER_PORT = System.getenv("BROKER_PORT");
     private static String SCHEMA_REGISTRY_HOST = System.getenv("SCHEMA_REGISTRY_HOST");
     private static final CloseableHttpClient httpClient = HttpClients.createDefault();
+    private Consumer<String, String> consumer;
+    private Producer<String, ScraperReport> producer;
 
     public static void main(String[] args) {
         Scraper scraper = new Scraper();
 
-        Properties props = new Properties();
-        props.put("bootstrap.servers", BROKER_HOST + ':' + BROKER_PORT);
-        props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-        props.put("value.serializer", "io.confluent.kafka.serializers.KafkaAvroSerializer");
-        props.put("schema.registry.url", "http://" + SCHEMA_REGISTRY_HOST + ":8081");
+        scraper.start();
+    }
 
-        String hostname = "nginx";
-        HttpResponseDigest httpResponseDigest = null;
+    private void start() {
+        Properties consumerProps = new Properties();
+        consumerProps.put("bootstrap.servers", BROKER_HOST + ':' + BROKER_PORT);
+        consumerProps.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+        consumerProps.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+        consumerProps.put("group.id", "scraper");
+        consumer = new KafkaConsumer<String,String>(consumerProps);
+        consumer.subscribe(Collections.singletonList(DETECTION_QUERIES_TOPIC));
+
+        Properties producerProps = new Properties();
+        producerProps.put("bootstrap.servers", BROKER_HOST + ':' + BROKER_PORT);
+        producerProps.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+        producerProps.put("value.serializer", "io.confluent.kafka.serializers.KafkaAvroSerializer");
+        producerProps.put("schema.registry.url", "http://" + SCHEMA_REGISTRY_HOST + ":8081");
+        producer = new KafkaProducer<String, ScraperReport>(producerProps);
+
         try {
-            httpResponseDigest = scraper.sendRequest("http://" + hostname);
-        } catch (IllegalArgumentException illegalArgumentException) {
-            log.error("An exception occured while setting HttpGet request URI: ", illegalArgumentException);
-        }
+            while (true) {
+                ConsumerRecords<String, String> consumerRecords = getConsumerRecords();
 
-        Producer<String, HttpResponseDigest> producer = new KafkaProducer<String, HttpResponseDigest>(props);
-        ProducerRecord<String, HttpResponseDigest> producerRecord = new ProducerRecord<String, HttpResponseDigest>(SCRAPING_DATA_TOPIC,
-            hostname,
-            httpResponseDigest
-        );
-        log.info("Sending scraping-data record.");
-        producer.send(producerRecord);
-        producer.close();
+                for (ConsumerRecord<String, String> consumerRecord : consumerRecords) {
+                    Gson gson = new Gson();
+                    String[] hostnames = gson.fromJson(consumerRecord.value(), String[].class);
+
+                    for (String hostname : Arrays.asList(hostnames)) {
+                        scanHost(consumerRecord.key(), hostname);
+                    }
+                }
+            }
+        } finally {
+            try {
+                httpClient.close();
+            } catch (IOException ioException) {
+                log.error("An exception occured while closing HttpClient: ", ioException);
+            }
+            consumer.close();
+            producer.close();
+        }
     }
 
     /**
@@ -74,12 +107,6 @@ public class Scraper {
             log.error("An exception occured while handling HttpResponse: ", clientProtocolException);
         } catch (IOException ioException) {
             log.error("An exception occured during HttpGet execution: ", ioException);
-        } finally {
-            try {
-                httpClient.close();
-            } catch (IOException ioException) {
-                log.error("An exception occured while closing HttpClient: ", ioException);
-            }
         }
         return httpResponseDigest;
     }
@@ -144,5 +171,40 @@ public class Scraper {
         ).collect(Collectors.toList()))
         .build();
         return httpResponseDigest;
+    }
+
+    private ConsumerRecords<String, String> getConsumerRecords() {
+        ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(10));
+        if (!records.isEmpty())
+            log.info(records.toString());
+        return records;
+    }
+
+    private void scanHost(String correlationId, String hostname){
+        // Wrap HttpResponseDigest in ScraperReport
+        // - includes hostname
+        // - includes ip
+        // - includes CorrelationID to enable response
+    
+        HttpResponseDigest httpResponseDigest = null;
+        try {
+            httpResponseDigest = sendRequest("http://" + hostname);
+        } catch (IllegalArgumentException illegalArgumentException) {
+            log.error("An exception occured while setting HttpGet request URI: ", illegalArgumentException);
+        }
+
+        ScraperReport scraperReport = ScraperReport.newBuilder()
+        .setHostIp("IP")
+        .setHostname(hostname)
+        .setHttpResponseDigest(httpResponseDigest)
+        .setRequesterCorrelationId(correlationId)
+        .build();
+
+        ProducerRecord<String, ScraperReport> producerRecord = new ProducerRecord<String, ScraperReport>(SCRAPING_DATA_TOPIC,
+            hostname,
+            scraperReport
+        );
+        log.info("Sending scraping-data record.");
+        producer.send(producerRecord);
     }
 }

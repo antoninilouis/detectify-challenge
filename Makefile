@@ -23,10 +23,13 @@ rm-apps: clear-schemas
 
 avro:
 	rm -rf scraper/src/main/java/types detector/src/main/java/types
+	java -jar avro-tools-1.9.2.jar compile schema scraper/src/main/resources/avro/ScraperReport.avsc scraper/src/main/java
 	java -jar avro-tools-1.9.2.jar compile schema scraper/src/main/resources/avro/HttpResponseDigest.avsc scraper/src/main/java
+	cp -r scraper/src/main/java/types detector/src/main/java
 	java -jar avro-tools-1.9.2.jar compile schema detector/src/main/resources/avro/HttpServer.avsc detector/src/main/java
 	java -jar avro-tools-1.9.2.jar compile schema detector/src/main/resources/avro/ServerScan.avsc detector/src/main/java
-	cp -r scraper/src/main/java/types detector/src/main/java
 
 start:
 	docker-compose -f docker/compose.yml --env-file docker/.dev.env up -d
+
+# docker exec `docker ps --filter "name=zookeeper_1" -q` sh -c

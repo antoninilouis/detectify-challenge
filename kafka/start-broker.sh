@@ -11,15 +11,15 @@ BROKER_PID=$!
 
 # create topics
 /kafka/bin/kafka-topics.sh --create --topic scraping-data --partitions 1 \
-    --replication-factor 1 --if-not-exists
+    --replication-factor 1 --bootstrap-server localhost:9092
 
 /kafka/bin/kafka-topics.sh --create --topic detection-data --partitions 1 \
-    --replication-factor 1 --if-not-exists
+    --replication-factor 1 --bootstrap-server localhost:9092
 
 /kafka/bin/kafka-topics.sh --create --topic detection-queries --partitions 1 \
-    --replication-factor 1 --if-not-exists
+    --replication-factor 1 --bootstrap-server localhost:9092
 
 /kafka/bin/kafka-topics.sh --create --topic detection-responses --partitions 1 \
-    --replication-factor 1 --if-not-exists
+    --replication-factor 1 --bootstrap-server localhost:9092
 
 wait $BROKER_PID

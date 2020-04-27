@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import types.Header;
 import types.HttpResponseDigest;
 import types.HttpServer;
+import types.ScraperReport;
 import types.ServerScan;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,16 +42,16 @@ public class Detector {
         StreamsBuilder builder = new StreamsBuilder();
 
         // Build stream
-        KStream<String, HttpResponseDigest> stream = builder.stream(SCRAPING_DATA_TOPIC);
+        KStream<String, ScraperReport>stream = builder.stream(SCRAPING_DATA_TOPIC);
         // Build http server topology
         stream
-            .flatMap(new KeyValueMapper<String, HttpResponseDigest, Iterable<KeyValue<String, HttpServer>>> (){
+            .flatMap(new KeyValueMapper<String, ScraperReport, Iterable<KeyValue<String, HttpServer>>> (){
                 @Override
-                public Iterable<KeyValue<String, HttpServer>> apply(String key, HttpResponseDigest value) {
+                public Iterable<KeyValue<String, HttpServer>> apply(String key, ScraperReport scraperReport) {
                     return Arrays.asList(KeyValue.pair(key,
                         HttpServer.newBuilder()
-                        .setHostname(key)
-                        .setIp("IP")
+                        .setHostname(scraperReport.getHostname())
+                        .setIp(scraperReport.getHostIp())
                         .build()
                     ));
                 }
@@ -59,10 +60,10 @@ public class Detector {
 
         // Build server scan topology
         stream
-            .flatMap(new KeyValueMapper<String, HttpResponseDigest, Iterable<KeyValue<String, ServerScan>>> (){
+            .flatMap(new KeyValueMapper<String, ScraperReport, Iterable<KeyValue<String, ServerScan>>> (){
                 @Override
-                public Iterable<KeyValue<String, ServerScan>> apply(String hostname, HttpResponseDigest httpResponseDigest) {
-                    List<String> technologies = detectTechnologies(httpResponseDigest);
+                public Iterable<KeyValue<String, ServerScan>> apply(String hostname, ScraperReport scraperReport) {
+                    List<String> technologies = detectTechnologies(scraperReport.getHttpResponseDigest());
                     return technologies.stream().map(technology -> {
                         KeyValue<String, ServerScan> kv = KeyValue.pair(hostname,
                             ServerScan.newBuilder()

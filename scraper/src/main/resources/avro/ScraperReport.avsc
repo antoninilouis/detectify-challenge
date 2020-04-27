@@ -1,0 +1,87 @@
+{
+    "namespace": "types",
+    "name": "ScraperReport",
+    "type": "record",
+    "fields": [{
+            "name": "hostname",
+            "type": "string"
+        },
+        {
+            "name": "host_ip",
+            "type": "string"
+        },
+        {
+            "name": "requester_correlation_id",
+            "type": "string"
+        },
+        {
+            "name": "http_response_digest",
+            "type": {
+                "type": "record",
+                "name": "HttpResponseDigest",
+                "fields": [{
+                    "name": "headers",
+                    "type": {
+                        "type": "array",
+                        "items": [{
+                            "type": "record",
+                            "name": "Header",
+                            "fields": [{
+                                    "name": "name",
+                                    "type": ["null", "string"]
+                                },
+                                {
+                                    "name": "value",
+                                    "type": ["null", "string"]
+                                },
+                                {
+                                    "name": "elements",
+                                    "type": {
+                                        "type": "array",
+                                        "items": [{
+                                            "type": "record",
+                                            "name": "Element",
+                                            "fields": [{
+                                                    "type": ["null", "string"],
+                                                    "name": "name"
+                                                },
+                                                {
+                                                    "type": ["null", "string"],
+                                                    "name": "value"
+                                                },
+                                                {
+                                                    "name": "parameters",
+                                                    "type": {
+                                                        "type": "array",
+                                                        "items": [{
+                                                            "type": "record",
+                                                            "name": "Parameter",
+                                                            "fields": [{
+                                                                    "name": "name",
+                                                                    "type": ["null", "string"]
+                                                                },
+                                                                {
+                                                                    "name": "value",
+                                                                    "type": ["null", "string"]
+                                                                }
+                                                            ]
+                                                        }]
+                                                    }
+                                                },
+                                                {
+                                                    "name": "parameter_count",
+                                                    "type": ["null", "int"]
+                                                }
+                                            ]
+                                        }]
+                                    }
+                                }
+                            ]
+                        }]
+                    }
+                }]
+            }
+
+        }
+    ]
+}
