@@ -8,9 +8,11 @@ import types.ScraperReport;
 import types.ServerScan;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
+import com.google.gson.JsonArray;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyValue;
@@ -19,18 +21,24 @@ import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KeyValueMapper;
+import org.apache.kafka.streams.kstream.Produced;
+
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
+import io.confluent.kafka.serializers.KafkaAvroDeserializer;
+import io.confluent.kafka.serializers.KafkaJsonDeserializer;
+import io.confluent.kafka.serializers.KafkaJsonSerializer;
 import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
 
 /**
  * A Kafka streaming application to identify the technology used by a server.
- * The Detector uses scraping-data topic HttpResponseDigest serialized data as source
+ * The Detector uses scraping-data topic ScraperReport serialized data as source
  */
 @Slf4j
 public class Detector {
     private static String SCRAPING_DATA_TOPIC = "scraping-data";
-    private static String HTTP_SERVER_DATA = "http-server-data";
-    private static String SERVER_SCAN_DATA = "server-scan-data";
+    private static String DETECTION_RESPONSES_TOPIC = "detection-responses";
+    private static String HTTP_SERVER_DATA_TOPIC = "http-server-data";
+    private static String SERVER_SCAN_DATA_TOPIC = "server-scan-data";
     private static String BROKER_HOST = System.getenv("BROKER_HOST");
     private static String BROKER_PORT = System.getenv("BROKER_PORT");
     private static String SCHEMA_REGISTRY_HOST = System.getenv("SCHEMA_REGISTRY_HOST");
@@ -56,7 +64,7 @@ public class Detector {
                     ));
                 }
             })
-            .to(HTTP_SERVER_DATA);
+            .to(HTTP_SERVER_DATA_TOPIC);
 
         // Build server scan topology
         stream
@@ -76,7 +84,22 @@ public class Detector {
                     }).collect(Collectors.toList());
                 }
             })
-            .to(SERVER_SCAN_DATA);
+            .to(SERVER_SCAN_DATA_TOPIC);
+
+        // Build string topology
+        // Produce a record to detection-responses topic with requester correlation id as key and matchList as value
+        // Build stream
+        stream
+            .flatMap(new KeyValueMapper<String, ScraperReport, Iterable<KeyValue<String, Object>>> (){
+                @Override
+                public Iterable<KeyValue<String, Object>> apply(String key, ScraperReport scraperReport) {
+                    List<String> technologies = detectTechnologies(scraperReport.getHttpResponseDigest());
+                    JsonArray matchList = new JsonArray();
+                    technologies.forEach(technology -> matchList.add(technology));
+                    return Collections.singletonList(KeyValue.pair(scraperReport.getRequesterCorrelationId().toString(), matchList.toString()));
+                }
+            })
+            .to(DETECTION_RESPONSES_TOPIC, Produced.with(Serdes.String(), Serdes.serdeFrom(new KafkaJsonSerializer<Object>(), new KafkaJsonDeserializer<Object>())));
 
         Topology topology = builder.build();
         Properties props = new Properties();
