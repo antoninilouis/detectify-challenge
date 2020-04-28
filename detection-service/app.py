@@ -39,7 +39,7 @@ def scan():
     future = producer.send(DETECTION_QUERIES_TOPIC, body, correlationId)
 
     # Consume a record in detection-responses
-    consumer = KafkaConsumer(bootstrap_servers=app.config['BROKER_HOST'] + ':' + app.config['BROKER_PORT'], 
+    consumer = KafkaConsumer(bootstrap_servers=app.config['BROKER_HOST'] + ':' + app.config['BROKER_PORT'], value_deserializer=lambda v: json.loads(v),
         group_id="detection-service", session_timeout_ms=6000, 
         request_timeout_ms=6010, consumer_timeout_ms=5000)
     consumer.subscribe(topics=[DETECTION_RESPONSES_TOPIC])

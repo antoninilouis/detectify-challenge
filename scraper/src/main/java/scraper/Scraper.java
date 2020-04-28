@@ -1,6 +1,7 @@
 package scraper;
 
 import java.io.IOException;
+import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
@@ -73,9 +74,16 @@ public class Scraper {
                     Gson gson = new Gson();
                     String[] hostnames = gson.fromJson(consumerRecord.value(), String[].class);
                     List<Object> articles = Arrays.asList(hostnames).stream()
-                        .map(hostname -> scanHost(hostname))
+                        .map(hostname -> {
+                                try {
+                                    return scanHost(hostname);
+                                } catch (UnknownHostException e) {
+                                    log.warn("Unknown host: " + hostnames, e);
+                                }
+                                return null;
+                            })
+                        .filter(elem -> elem != null)
                         .collect(Collectors.toList());
-
                     ScraperReport scraperReport = ScraperReport.newBuilder()
                         .setArticles(articles)
                         .setRequesterCorrelationId(consumerRecord.key())
@@ -110,13 +118,15 @@ public class Scraper {
      * - Control could be improved by reading content from the Entity using ImputStream
      * - Flexibility could be improved by handling HTTP2
      */
-    private HttpResponseDigest sendRequest(String uri) throws IllegalArgumentException {
+    private HttpResponseDigest sendRequest(String uri) throws IllegalArgumentException, UnknownHostException {
         HttpResponseDigest httpResponseDigest = null;
         try {
             HttpGet httpget = new HttpGet(uri);
             httpResponseDigest = httpClient.execute(httpget, responseHandler);
         } catch (ClientProtocolException clientProtocolException) {
             log.error("An exception occured while handling HttpResponse: ", clientProtocolException);
+        } catch (UnknownHostException e) {
+            throw e;
         } catch (IOException ioException) {
             log.error("An exception occured during HttpGet execution: ", ioException);
         }
@@ -192,7 +202,7 @@ public class Scraper {
         return records;
     }
 
-    private Article scanHost(String hostname){
+    private Article scanHost(String hostname) throws UnknownHostException {
         // Wrap HttpResponseDigest in ScraperReport
         // - includes hostname
         // - includes ip
@@ -203,6 +213,8 @@ public class Scraper {
             httpResponseDigest = sendRequest("http://" + hostname);
         } catch (IllegalArgumentException illegalArgumentException) {
             log.error("An exception occured while setting HttpGet request URI: ", illegalArgumentException);
+        } catch (UnknownHostException e) {
+            throw e;
         }
 
         Article scraperArticle = Article.newBuilder()
