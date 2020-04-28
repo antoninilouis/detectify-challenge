@@ -1,9 +1,9 @@
 import os
 import json;
 import base64;
-from flask import Flask, request
+from flask import Flask, request, g
 from flask.json import jsonify
-from kafka import KafkaProducer, KafkaConsumer, TopicPartition, g
+from kafka import KafkaProducer, KafkaConsumer, TopicPartition
 from flasgger import Swagger
 import psycopg2
 
@@ -53,11 +53,19 @@ def scan():
     except StopIteration:
         return jsonify([])
 
-@app.route('/scan/<domain>')
-def getDomainScan(domain):
-    db = connect_db()
+@app.route('/scan/<hostname>')
+def getDomainScan(hostname):
+    """
+    file: swagger/scan-host.yml
+    """
+    db = get_db()
     cur = db.cursor()
-    res = cur.execute('SELECT version()')
+    cur.execute("""
+        SELECT DISTINCT public."ServerScan".technology FROM public."ServerScan" INNER JOIN public."HttpServer" 
+        ON public."ServerScan".http_server_hostname=public."HttpServer".hostname
+        WHERE public."HttpServer".hostname='""" + hostname + """'
+    """)
+    res = cur.fetchall()
     cur.close()
     return jsonify(res)
 

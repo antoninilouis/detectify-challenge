@@ -71,7 +71,7 @@ services:
     nginx:
         image: nginx:alpine
     detection-service:
-        image: jazzdd/alpine-flask
+        image: detectify-challenge/detection:latest
         volumes:
             - type: bind
               source: ../detection-service

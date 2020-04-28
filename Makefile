@@ -11,6 +11,9 @@ build-detector:
 	gradle -b detector/build.gradle distTar
 	docker build -f docker/detector.Dockerfile -t detectify-challenge/detector .
 
+build-detection:
+	docker build -f docker/detection.Dockerfile -t detectify-challenge/detection .
+
 stop-all:
 	docker rm -f `docker ps -aq`
 
@@ -29,7 +32,7 @@ avro: do_script
 	java -jar avro-tools-1.9.2.jar compile schema detector/src/main/resources/avro/HttpServer.avsc detector/src/main/java
 	java -jar avro-tools-1.9.2.jar compile schema detector/src/main/resources/avro/ServerScan.avsc detector/src/main/java
 
-build-all: avro build-ingestor build-scraper build-detector
+build-all: avro build-ingestor build-scraper build-detector build-detection
 
 rm-apps: clear-schemas
 	docker rm -f `docker ps --filter "name=docker_scraper_1" --filter "name=docker_detector_1" --filter "name=docker_detection-service_1" -aq`

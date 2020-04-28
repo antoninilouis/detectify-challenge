@@ -1,5 +1,4 @@
-Example endpoint returning a list of colors by palette
-In this example the specification is taken from external YAML file
+Endpoint returning the list of hosts that run Nginx.
 ---
 summary: Returns the list of hosts that run Nginx
 consumes:

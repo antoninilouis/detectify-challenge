@@ -1,0 +1,4 @@
+postgresql-dev
+gcc
+python-dev
+musl-dev

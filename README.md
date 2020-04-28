@@ -15,7 +15,7 @@ $ make start
 ```
 
 to start the system in the background. After the start, the host port "80" is mapped to the service port and requests can be sent.
-The OpenAPI standard documentation is available in a Swagger interface served at **/apidocs**
+The OpenAPI standard documentation is available in a Swagger interface served at **/apidocs**. It is possible to try the service from the Swagger interface.
 
 ## Stack
 - Kafka (Messaging/Streaming and Dataflow). Kafka was selected as stream processing solution as web analytics is its original use case.
