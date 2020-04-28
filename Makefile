@@ -43,7 +43,7 @@ start-apps:
 start:
 	docker-compose -f docker/compose.yml --env-file docker/.dev.env up -d
 	@echo Waiting for connect worker to be available...
-	@sleep 30
+	@sleep 120
 
 	@curl --header "Content-Type: application/json" \
 		--request POST --data @kafka/http-server-connector.json \
