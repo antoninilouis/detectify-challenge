@@ -1,0 +1,21 @@
+Endpoint returning the list of technologies that the host is using.
+---
+summary: Returns the list of hosts that run Nginx
+produces:
+  - application/json
+parameters:
+  - name: hostname
+    in: path
+    description: The hostname to request technologies from.
+    required: true
+    schema:
+      type: string
+responses:
+  200:
+    description: The list of technologies that the host uses.
+    schema:
+      type: array
+      items:
+        type: array
+        items:
+          type: string

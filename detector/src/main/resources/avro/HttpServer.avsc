@@ -1,0 +1,14 @@
+{
+    "namespace": "types",
+    "type": "record",
+    "name": "HttpServer",
+    "fields": [{
+            "name": "hostname",
+            "type": "string"
+        },
+        {
+            "name": "ip",
+            "type": ["null", "string"]
+        }
+    ]
+}
