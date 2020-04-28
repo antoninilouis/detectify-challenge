@@ -29,6 +29,13 @@ The OpenAPI standard documentation is available in a Swagger interface served at
 The project source are divided into 3 application directories (detection-service/, detector/, scraper/) and 3 configuration directories (kafka/, docker/, sql/).
 
 ## Tests
-The testing protocol leverages Docker to simulate hosts.
+A Nginx host is added to the Docker bridge network and resolvable as "nginx" for testing. In principle, the scanning system deployed in Docker images can also connect to hosts on the internet.
 
 ## Scaling
+The system has a double scaling scheme. Kafka is best at scaling horizontally so the number of brokers and Kafka Connect workers is a quick way to scale the messaging.
+
+Most of the topics should be divided in a specific messaging traffic group associated to a consumer or producer group. By associating Kafka topics to specific brokers, the messages from a specific app are handled by a precise group of brokers, making it possible to scale an app messaging horizontally from multiplying the brokers.
+
+For example, the detector engine messaging can be scaled by adding 2 brokers in charge of the detection-data and detection-replies topics.
+
+[AVRO serialization system - https://avro.apache.org/docs/1.8.1/index.html](https://avro.apache.org/docs/1.8.1/index.html)

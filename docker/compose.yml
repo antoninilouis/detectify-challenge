@@ -78,5 +78,12 @@ services:
               target: /app
         ports:
             - "80:80"
+        environment:
+            - BROKER_HOST=broker-0
+            - BROKER_PORT=9092
+            - POSTGRES_HOST=postgres
+            - POSTGRES_DB=detectify-challenge
+            - POSTGRES_USER=${DETECTIFY_CHALLENGE_POSTGRES_USER}
+            - POSTGRES_PASSWORD=${DETECTIFY_CHALLENGE_POSTGRES_PASSWORD}
         depends_on:
             - broker-0
