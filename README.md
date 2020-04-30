@@ -1,4 +1,7 @@
-![detector](https://user-images.githubusercontent.com/4671707/80693933-13510c80-8ad4-11ea-96fa-cb617adc09d1.png)
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/4671707/80693933-13510c80-8ad4-11ea-96fa-cb617adc09d1.png">
+</p>
+
 # Detectify Challenge
 ## A distributed technology scanner
 Detectify-challenge scaer is a scraper and an analytics system to identify technologies used by a hosts.
